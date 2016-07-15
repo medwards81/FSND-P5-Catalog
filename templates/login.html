@@ -18,13 +18,25 @@
       <h1>Movie Catalog</h1>
     </div>
   </div>
+  
+ 	<div class="flash">
+		{% with messages = get_flashed_messages() %}
+	      {% if messages %}	          
+	        <ul>
+		        {% for message in messages %}
+		            <li><strong>{{ message }}</strong></li>
+		        {% endfor %}
+	        </ul>
+	        {% endif %}
+	    {% endwith %}
+	</div>
 
 <br><br>
 
 <!-- GOOGLE PLUS SIGN IN-->
 <div class="signInWrapper">  
 
-    <h3>Log in with:</h3>
+    <h3 id="login-directive">Log in with:</h3>
 
       <div id="signInButton">
         <span class="g-signin"
@@ -48,7 +60,7 @@ function signInCallback(authResult) {
 
     //console.log(authResult);
 
-     $('#result').html('Please wait...');
+     $('#login-directive').html('Please wait...');
 
     // Hide the sign-in button now that the user is authorized
     $('#signInButton').attr('style', 'display: none');
@@ -56,14 +68,14 @@ function signInCallback(authResult) {
     // Send the one-time-use code to the server, if the server responds, write a 'login successful' message to the web page and then redirect back to the main restaurants page
     $.ajax({
       type: 'POST',
-      url: '/gconnect?state={{STATE}}',
+      url: '/gconnect?state={{STATE}}&_csrf_token={{csrf_token()}}',
       processData: false,
       data: authResult['code'],
       contentType: 'application/octet-stream; charset=utf-8',
       success: function(result) {
         // Handle or verify the server response if necessary.
         if (result) {
-          $('#result').html('Login Successful!<br>Redirecting...');
+          $('#result').html('<p>Login Successful!<br>Redirecting...</p>');
           setTimeout(function() {
             window.location.href = "/genre";
           }, 4000);

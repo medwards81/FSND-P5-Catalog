@@ -184,10 +184,10 @@ h3 {
 	padding: .25em;
 	margin-bottom: 1em;
 }
-.row.description {
+.description {
     border: 1px solid #ccc;
     padding: 20px;
-    margin: 20px 0;
+    /*margin: 20px 0;*/
 }
 
 @Media (max-width: 500px)
@@ -209,6 +209,26 @@ h3 {
 	}	
 }
 
+.thumbnail-small {
+    width: 100px;
+    height: auto;
+    display: inline;
+}
+
+.thumbnail-medium {
+    width: 250px;
+    height: auto;
+    display: inline;
+}
+.float-left {
+    float: left;
+}
+.border-bottom-blue {
+	border-bottom: 1px solid #42C3C9;
+}
+.movie-title {
+	color: #42C3C9;
+}
 @Media (max-width: 400px)
 {
 	.btn {

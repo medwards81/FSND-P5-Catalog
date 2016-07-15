@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+from flask import Flask, render_template, request, redirect, jsonify, url_for
 from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Genre, Movie, User
@@ -9,8 +9,10 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
 import json
-from flask import make_response
+from flask import make_response, flash, abort
 import requests
+from functools import wraps
+
 
 app = Flask(__name__)
 
@@ -26,11 +28,24 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+# check login status wrapper function
+# Based on: http://flask.pocoo.org/docs/0.10/patterns/viewdecorators/       
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' in login_session:
+            return f(*args, **kwargs)
+        else:
+            flash("Please login to access this feature.")
+            return redirect(url_for('showLogin', next=request.url))
+    return decorated_function
+
 # Create anti-forgery state token
 @app.route('/login')
 def showLogin():
     state = ''.join(
-        random.choice(string.ascii_uppercase + string.digits) for x in range(32))
+        random.choice(string.ascii_uppercase + string.digits)
+        for x in range(32))
     login_session['state'] = state
     #return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
@@ -49,6 +64,7 @@ def showGenres():
 
 # Create a new genre
 @app.route('/genre/new/', methods=['GET', 'POST'])
+@login_required
 def newGenre():
     if request.method == 'POST':
         newGenre = Genre(
@@ -56,6 +72,7 @@ def newGenre():
             user_id=login_session['user_id'])
         session.add(newGenre)
         session.commit()
+        flash('New genre added.')
         return redirect(url_for('showGenres'))
     else:
         return render_template('newGenre.html')
@@ -63,12 +80,15 @@ def newGenre():
 
 # Edit a genre
 @app.route('/genre/<int:genre_id>/edit/', methods=['GET', 'POST'])
+@login_required
 def editGenre(genre_id):
     editedGenre = session.query(
         Genre).filter_by(id=genre_id).one()
     if request.method == 'POST':
         if request.form['name']:
             editedGenre.name = request.form['name']
+            editedGenre.description = request.form['description']
+            flash('Genre successfully updated.')
             return redirect(url_for('showGenreMovies', genre_id=genre_id))
     else:
         return render_template(
@@ -77,12 +97,14 @@ def editGenre(genre_id):
 
 # Delete a genre
 @app.route('/genre/<int:genre_id>/delete/', methods=['GET', 'POST'])
+@login_required
 def deleteGenre(genre_id):
     genreToDelete = session.query(
         Genre).filter_by(id=genre_id).one()
     if request.method == 'POST':
         session.delete(genreToDelete)
         session.commit()
+        flash('Genre successfully deleted.')
         return redirect(
             url_for('showGenres', genre_id=genre_id))
     else:
@@ -96,12 +118,14 @@ def deleteGenre(genre_id):
 def showGenreMovies(genre_id):
     genre = session.query(Genre).filter_by(id=genre_id).one()
     movies = session.query(Movie).filter_by(
-        genre_id=genre_id).all()
+        genre_id=genre_id).order_by(asc(Movie.name)).all()
     creator = getUserInfo(genre.user_id)
-    if 'username' not in login_session or creator.id != login_session['user_id']:
-        return render_template('publicGenreMovies.html', genre=genre, movies=movies)
+    if 'username' not in login_session:
+        return render_template('publicGenreMovies.html', genre=genre,
+                    movies=movies)
     else:
-        return render_template('genreMovies.html', genre=genre, movies=movies, creator=creator)
+        return render_template('genreMovies.html', genre=genre, movies=movies,
+            creator=creator, user_id=login_session['user_id'])
 
 
 # Show a specific movie
@@ -109,18 +133,28 @@ def showGenreMovies(genre_id):
 @app.route('/genre/<int:genre_id>/movies/movie/<int:movie_id>/')
 def showMovie(genre_id, movie_id):
     movie = session.query(Movie).filter_by(id=movie_id).one()
-    return render_template('movie.html', movie=movie)
+    genre = session.query(Genre).filter_by(id=genre_id).one()
+    creator = getUserInfo(movie.user_id)
+    if 'username' not in login_session:
+        return render_template('publicMovie.html', movie=movie)
+    else:
+        return render_template('movie.html', movie=movie, creator=creator,
+                    user_id=login_session['user_id'])
+
 
 # Create a new movie
 @app.route(
     '/genre/<int:genre_id>/addMovie/', methods=['GET', 'POST'])
+@login_required
 def newMovie(genre_id):
     if request.method == 'POST':
         newMovie = Movie(
-            name=request.form['name'], genre_id=genre_id, description=request.form['plot'],
-            user_id=login_session['user_id'])
+            name=request.form['name'], genre_id=genre_id,
+            plot=request.form['plot'], user_id=login_session['user_id'],
+            year=request.form['year'], picture=request.form['picture'])
         session.add(newMovie)
         session.commit()
+        flash('New movie added.')
         return redirect(url_for('showGenreMovies', genre_id=genre_id))
     else:
         genre = session.query(Genre).filter_by(id=genre_id).one()
@@ -130,6 +164,7 @@ def newMovie(genre_id):
 # Edit a movie
 @app.route('/genre/<int:genre_id>/movie/<int:movie_id>/edit',
            methods=['GET', 'POST'])
+@login_required
 def editMovie(genre_id, movie_id):
     editedMovie = session.query(Movie).filter_by(id=movie_id).one()
     if request.method == 'POST':
@@ -137,32 +172,46 @@ def editMovie(genre_id, movie_id):
             editedMovie.name = request.form['name']
         if request.form['genre']:
             editedMovie.genre_id = request.form['genre']
+        if request.form['year']:
+            editedMovie.year = request.form['year']
+        if request.form['plot']:
+            editedMovie.plot = request.form['plot']
+        if request.form['picture']:
+            editedMovie.picture = request.form['picture']
         session.add(editedMovie)
         session.commit()
-        return redirect(url_for('showGenreMovies', genre_id=editedMovie.genre_id))
+        flash('Movie successfully updated.')
+        return redirect(url_for('showGenreMovies',
+                                genre_id=genre_id))
     else:
         genres = session.query(Genre).all()
         return render_template(
-            'editMovie.html', genre_id=genre_id, movie_id=movie_id, movie=editedMovie, genres=genres)
+            'editMovie.html', genre_id=genre_id, movie_id=movie_id,
+            movie=editedMovie, genres=genres)
 
-			
+
 # Delete a movie
 @app.route('/genre/<int:genre_id>/movie/<int:movie_id>/delete',
            methods=['GET', 'POST'])
+@login_required
 def deleteMovie(genre_id, movie_id):
     movieToDelete = session.query(Movie).filter_by(id=movie_id).one()
     if request.method == 'POST':
         session.delete(movieToDelete)
         session.commit()
+        flash('Movie successfully deleted.')
         return redirect(url_for('showGenreMovies', genre_id=genre_id))
     else:
         return render_template('deleteMovie.html', movie=movieToDelete)
 
+
 # JSON endpoints
-@app.route('/movie/JSON')
+@app.route('/catalog/JSON')
+@app.route('/catalog/json')
 def moviesJSON():
     movies = session.query(Movie).all()
     return jsonify(movies=[m.serialize for m in movies])
+
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
@@ -171,7 +220,7 @@ def gconnect():
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
-    
+
     # Obtain authorization code
     code = request.data
 
@@ -219,7 +268,7 @@ def gconnect():
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
+        response = make_response(json.dumps('Current user already connected.'),
                                  200)
         response.headers['Content-Type'] = 'application/json'
         return response
@@ -253,11 +302,13 @@ def gconnect():
     #output += '!</h1>'
     #output += '<img src="'
     #output += login_session['picture']
-    #output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    #output += ' " style = "width: 300px; height: 300px;border-radius: 150px;'
+    #output += '-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
     flash("You are now logged in as %s." % login_session['username'])
     print "done!"
     return output
-    
+
+
 # DISCONNECT - Revoke a current user's token and reset their login_session
 @app.route('/gdisconnect')
 def gdisconnect():
@@ -280,8 +331,9 @@ def gdisconnect():
             json.dumps('Failed to revoke token for given user.', 400))
         response.headers['Content-Type'] = 'application/json'
         return response
-        
-    
+
+''' Will add Fb connect at a later time
+
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
     if request.args.get('state') != login_session['state']:
@@ -295,8 +347,10 @@ def fbconnect():
         'web']['app_id']
     app_secret = json.loads(
         open('fb_client_secrets.json', 'r').read())['web']['app_secret']
-    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
-        app_id, app_secret, access_token)
+    url = 'https://graph.facebook.com/oauth/access_token?grant_type=' \
+            'fb_exchange_token&client_id=' \
+            '%s&client_secret=%s&fb_exchange_token=%s' % (
+            app_id, app_secret, access_token)
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
 
@@ -316,12 +370,14 @@ def fbconnect():
     login_session['email'] = data["email"]
     login_session['facebook_id'] = data["id"]
 
-    # The token must be stored in the login_session in order to properly logout, let's strip out the information before the equals sign in our token
+    # The token must be stored in the login_session in order to properly
+    # logout, let's strip out the information before equals sign in our token
     stored_token = token.split("=")[1]
     login_session['access_token'] = stored_token
 
     # Get user picture
-    url = 'https://graph.facebook.com/v2.4/me/picture?%s&redirect=0&height=200&width=200' % token
+    url = 'https://graph.facebook.com/v2.4/me/picture?%s&redirect=0' \
+          '&height=200&width=200' % token
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
     data = json.loads(result)
@@ -341,7 +397,8 @@ def fbconnect():
     #output += '!</h1>'
     #output += '<img src="'
     #output += login_session['picture']
-    #output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    #output += ' " style = "width: 300px; height: 300px;border-radius: 150px;'
+    #output += '-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
 
     flash("You are now logged in as %s." % login_session['username'])
     return output
@@ -352,11 +409,12 @@ def fbdisconnect():
     facebook_id = login_session['facebook_id']
     # The access token must me included to successfully logout
     access_token = login_session['access_token']
-    url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
+    url = 'https://graph.facebook.com/%s/permissions?' \
+          'access_token=%s' % (facebook_id,access_token)
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
     return "You have been logged out"
-
+'''
 
 # Disconnect based on provider
 @app.route('/disconnect')
@@ -375,7 +433,7 @@ def disconnect():
         del login_session['picture']
         del login_session['user_id']
         del login_session['provider']
-        flash("You have successfully logged out.")
+        flash("You have been successfully logged out.")
         return redirect(url_for('showGenres'))
     else:
         flash("You were not logged in.")
@@ -403,6 +461,30 @@ def getUserID(email):
         return user.id
     except:
         return None
+        
+        
+# Protect against cross site request forgery
+# This will create a session token which will need to be added to forms
+# that make post requests
+# Code taken from: http://flask.pocoo.org/snippets/3/        
+@app.before_request
+def csrf_protect():
+    if request.method == "POST":
+        token = login_session.pop('_csrf_token', None)
+        if not token or (token != request.form.get('_csrf_token') 
+            and token != request.args.get('_csrf_token')):
+            abort(403)
+
+def generate_csrf_token():
+    if '_csrf_token' not in login_session:
+        token = ''.join(
+            random.choice(string.ascii_uppercase + string.digits)
+            for x in range(32))
+        login_session['_csrf_token'] = token
+    return login_session['_csrf_token']
+    
+
+app.jinja_env.globals['csrf_token'] = generate_csrf_token 
 
 
 if __name__ == '__main__':

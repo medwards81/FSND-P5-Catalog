@@ -46,6 +46,8 @@ class Movie(Base):
     user = relationship(User)
     imdb_id = Column(String(50), nullable=True)
     plot = Column(String(500), nullable=False)
+    year = Column(String(5), nullable=False)
+    picture = Column(String(250), nullable=True) 
 
     @property
     def serialize(self):

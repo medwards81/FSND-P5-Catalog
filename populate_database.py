@@ -38,7 +38,9 @@ session.commit()
 plot = "Twenty years since their first adventure, Lloyd and Harry go on a road trip to find Harry's newly " \
        "discovered daughter, who was given up for adoption."
 
-Comedy1 = Movie(user_id=1, name="Dumb and Dumber", genre=Genre1, plot=plot)
+Comedy1 = Movie(user_id=1, name="Dumb and Dumber", genre=Genre1, plot=plot,
+      picture="http://ia.media-imdb.com/images/M/MV5BMTIzNDI5MTc0M15BMl5BanBnXkFtZTYwMjM5NDU5._V1_SX300.jpg",
+      year="1994")
 
 session.add(Comedy1)
 session.commit()
@@ -46,7 +48,9 @@ session.commit()
 plot = "A group of juvenile criminals is sent for vacation to Kamp Kikakee. The clumsy Ernest has to " \
        " care for them, although he doesn't even know how to take care of himself."
 
-Comedy2 = Movie(user_id=1, name="Earnest Goes to Camp", genre=Genre1, plot=plot)
+Comedy2 = Movie(user_id=1, name="Earnest Goes to Camp", genre=Genre1, plot=plot,
+       picture="http://ia.media-imdb.com/images/M/MV5BMTM4NjU1ODY2Nl5BMl5BanBnXkFtZTcwNzI3NDgyMQ@@._V1_SX300.jpg",
+       year="1987")
 
 session.add(Comedy2)
 session.commit()
@@ -54,7 +58,9 @@ session.commit()
 plot = "A group of good-hearted but incompetent misfits enter the police academy, but the instructors " \
        "there are not going to put up with their pranks."
 
-Comedy3 = Movie(user_id=1, name="Police Academy", genre=Genre1, plot=plot)
+Comedy3 = Movie(user_id=1, name="Police Academy", genre=Genre1, plot=plot,
+       picture="http://ia.media-imdb.com/images/M/MV5BMTQ3NTU4NzY5Ml5BMl5BanBnXkFtZTcwNDk0ODUyMQ@@._V1_SX300.jpg",
+       year="1984")
 
 session.add(Comedy3)
 session.commit()
@@ -71,14 +77,18 @@ session.commit()
 plot = "A lawyer sees the chance to salvage his career and self-respect by taking a medical malpractice case " \
        " to trial rather than settling."
 
-Drama1 = Movie(user_id=1, name="The Verdict", genre=Genre2, plot=plot)
+Drama1 = Movie(user_id=1, name="The Verdict", genre=Genre2, plot=plot,
+        picture="http://ia.media-imdb.com/images/M/MV5BMTU5MzMwMzAzM15BMl5BanBnXkFtZTcwNjYyMjA0Mg@@._V1_SX300.jpg",
+        year="1982")
 
 session.add(Drama1)
 session.commit()
 
 plot = "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son."
 
-Drama2 = Movie(user_id=1, name="The Godfather", genre=Genre2, plot=plot)
+Drama2 = Movie(user_id=1, name="The Godfather", genre=Genre2, plot=plot,
+        picture="http://ia.media-imdb.com/images/M/MV5BMjEyMjcyNDI4MF5BMl5BanBnXkFtZTcwMDA5Mzg3OA@@._V1_SX300.jpg",
+        year="1972")
 
 session.add(Drama2)
 session.commit()
@@ -86,7 +96,9 @@ session.commit()
 plot = "An in-depth examination of the ways in which the U.S. Vietnam war impacts and disrupts the lives " \
        "of people in a small industrial town in Pennsylvania."
 
-Drama3 = Movie(user_id=1, name="The Deer Hunter", genre=Genre2, plot=plot)
+Drama3 = Movie(user_id=1, name="The Deer Hunter", genre=Genre2, plot=plot,
+        picture="http://ia.media-imdb.com/images/M/MV5BMTk3MTQzMDUwMF5BMl5BanBnXkFtZTgwMTUxNzYxMTE@._V1_SX300.jpg",
+        year="1978")
 
 session.add(Drama3)
 session.commit()
