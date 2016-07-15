@@ -1,0 +1,24 @@
+<html>
+
+<head>
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='styles.css')}}">
+</head>
+
+<body>
+
+<h1>Delete Movie: {{movie.name}}</h1>
+
+
+<form action="#" method="post">
+
+	<h3>Are you sure you want to delete {{movie.name}}?</h3>
+
+	<input type='submit', value='Delete'>
+
+	<a href="{{url_for('showGenreMovies', genre_id=movie.genre_id)}}">Cancel</a>
+
+</form>
+
+</body>
+
+</html>

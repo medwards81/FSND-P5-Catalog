@@ -1,0 +1,47 @@
+<html>
+
+
+<head>
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='styles.css' )}}">
+</head>
+
+<body>
+
+<h1>Edit Movie: {{movie.name}}</h1>
+
+
+<form action="{{url_for('editMovie', genre_id=genre_id, movie_id=movie_id)}}" method="post">
+
+
+	<p>Name:</p>
+	<input type ='text' size='30' name='name' placeholder='{{movie.name}}'>
+	
+	{% if genres !=[] %}
+	
+		<p>Genre:</p>
+
+		<select name="genre">
+	
+		{% for g in genres %}
+			{% if g.id == genre_id %}
+				<option value="{{g.id}}" selected>{{g.name}}</option>
+			{% else %}
+				<option value="{{g.id}}">{{g.name}}</option>
+			{% endif %}
+		{% endfor %}
+
+		</select>
+	
+	{% endif %}
+	
+	<br><br>
+	
+	<input type='submit' value='Edit'>
+	
+	<a href="{{url_for('showGenreMovies', genre_id=genre_id)}}">Cancel</a>
+
+
+</form>
+</body>
+
+</html>
