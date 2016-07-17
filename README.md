@@ -3,11 +3,11 @@ This project involved deploying a web application on virtual server.
 More specifically, a Flask Python application running on Ubuntu.
 Below are some of steps and resources I used to accomplish this.
 
-#### Server Info
+### Server Info
 - The IP address of the server is: 52.41.217.228
 - The URL path to the web application is: http://ec2-52-41-217-228.us-west-2.compute.amazonaws.com
 
-#### Steps, Resources Used and Software Installed
+### Steps, Resources Used and Software Installed
 1) ***Create a new user and grant user sudo permission***
 
 -- Resource: https://www.digitalocean.com/community/tutorials/how-to-add-and-delete-users-on-an-ubuntu-14-04-vps
